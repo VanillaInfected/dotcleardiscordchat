@@ -3,14 +3,14 @@ require 'dotenv/load'
 require 'logger'
 require 'json'
 require 'fileutils'
-require 'rufus-scheduler'  # Добавлен гем rufus-scheduler
+require 'rufus-scheduler' 
 
 logger = Logger.new('bot.log')
 logger.level = Logger::DEBUG
 
 ALLOWED_USERS = ENV['ALLOWED_USERS'].split(',')
 
-# Функция для загрузки настроек
+
 def load_settings
   begin
     settings_data = File.read('settings')
@@ -20,12 +20,12 @@ def load_settings
   end
 end
 
-# Функция для сохранения настроек
+
 def save_settings(settings)
   File.write('settings', settings.map { |key, value| "#{key} #{value}" }.join("\n"))
 end
 
-# Функция для загрузки истории
+
 def load_history
   begin
     history_data = File.read('history')
@@ -35,7 +35,6 @@ def load_history
   end
 end
 
-# Функция для сохранения истории
 def save_history(history, channel_name)
   history_file = File.join('deleted_messages', "#{channel_name}_#{Time.now.strftime('%Y-%m-%d')}.log")
   FileUtils.mkdir_p('deleted_messages')
@@ -45,7 +44,7 @@ end
 history = load_history
 channel_settings = load_settings
 
-# Инициализация планировщика
+
 scheduler = Rufus::Scheduler.new
 
 bot = Discordrb::Commands::CommandBot.new(
@@ -54,11 +53,10 @@ bot = Discordrb::Commands::CommandBot.new(
   log: logger
 )
 
-# Обработчик команды !setup
+
 bot.command(:setup, min_args: 2, max_args: 2) do |event, channel_id, interval_minutes|
   logger.info("Команда !setup выполнена пользователем #{event.user.username} в канале #{event.channel.name}")
 
-  # Проверка, разрешен ли пользователь для выполнения команды
   unless ALLOWED_USERS.empty? || ALLOWED_USERS.include?(event.user.id.to_s)
     logger.error("Пользователь #{event.user.username} не имеет разрешения на выполнение команды !setup.")
     return "У вас нет разрешения на выполнение этой команды."
@@ -81,15 +79,15 @@ bot.command(:setup, min_args: 2, max_args: 2) do |event, channel_id, interval_mi
   end
 end
 
-# Обработчик удаления сообщений
+
 bot.message_delete do |event|
   channel_name = event.channel.name
 
-  # Проверяем, есть ли у события объект сообщения
+  
   if event.message
     deleted_message = event.message
   else
-    # Если объект сообщения отсутствует, используем event.id для получения информации
+  
     deleted_message = "Message with ID: #{event.id} (no message object)"
   end
 
@@ -98,7 +96,7 @@ bot.message_delete do |event|
 
   logger.info("Бот увидел новое сообщение, готов удалить через #{channel_settings[event.channel.id]} минут: #{deleted_message}")
 
-  # Используем планировщик для удаления сообщения
+ 
   scheduler.at(event.timestamp + channel_settings[event.channel.id] * 60) do
     event.message.delete
     logger.info("Сообщение удалено: #{deleted_message}")
